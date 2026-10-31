@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this calculator, please cite it as below."
+title: "Clinical Sample Size Calculator"
+authors:
+  - family-names: "Danış"
+    given-names: "Faruk"
+    orcid: "https://orcid.org/0000-0001-8722-5402"
+    affiliation: "Bolu Abant İzzet Baysal University, Department of Emergency Medicine"
+license: MIT
+repository-code: "https://github.com/farukdanis/clinical-sample-size"
+url: "https://huggingface.co/spaces/farukdanis/clinical-sample-size"
+date-released: 2026-10-31
