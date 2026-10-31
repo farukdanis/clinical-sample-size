@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import math
 
-from scipy.stats import norm
-from statsmodels.stats.power import TTestIndPower
+from scipy.optimize import brentq
+from scipy.stats import nct, norm
+from scipy.stats import t as t_dist
 
 
 def z(p: float) -> float:
@@ -56,18 +57,35 @@ def two_proportions(p1, p2, alpha=0.05, power=0.80, ratio=1.0, sides=2,
 
 
 # 2. Two independent means (t-test) ------------------------------------------
+def t_power(d, n1, ratio=1.0, alpha=0.05, sides=2):
+    """Power of the two-sample t-test (noncentral t), n1 may be fractional."""
+    n2 = n1 * ratio
+    df = n1 + n2 - 2
+    ncp = d * math.sqrt(n1 * n2 / (n1 + n2))
+    crit = t_dist.ppf(1 - alpha / sides, df)
+    pw = nct.sf(crit, df, ncp)
+    if sides == 2:
+        pw += nct.cdf(-crit, df, ncp)
+    return float(pw)
+
+
 def two_means(diff=None, sd=None, d=None, alpha=0.05, power=0.80, ratio=1.0,
               sides=2):
-    """Exact noncentral-t solution (statsmodels TTestIndPower)."""
+    """Exact noncentral-t solution (same as G*Power / statsmodels)."""
     if d is None:
         if diff is None or sd is None or sd <= 0:
             raise ValueError("Give Cohen's d, or mean difference and SD.")
         d = abs(diff) / sd
     if d <= 0:
         raise ValueError("Effect size must be > 0.")
-    n1 = TTestIndPower().solve_power(
-        effect_size=d, alpha=alpha, power=power, ratio=ratio,
-        alternative="two-sided" if sides == 2 else "larger")
+    lo = max(1.5, 1.0 + 1.0 / ratio)  # keeps df > 0
+    hi = 4.0
+    while t_power(d, hi, ratio, alpha, sides) < power:
+        hi *= 2
+        if hi > 1e8:
+            raise ValueError("No solution below 100,000,000 per group.")
+    n1 = brentq(lambda n: t_power(d, n, ratio, alpha, sides) - power, lo, hi,
+                xtol=1e-10)
     n1c = math.ceil(n1 - 1e-9)
     n2c = math.ceil(n1c * ratio - 1e-9)
     return {"d": d, "n1_raw": float(n1), "n1": n1c, "n2": n2c,

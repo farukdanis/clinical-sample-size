@@ -34,6 +34,16 @@ def test_two_means_gpower():
     assert calc.two_means(diff=5, sd=10)["n1"] == 64
 
 
+def test_two_means_matches_statsmodels():
+    from statsmodels.stats.power import TTestIndPower
+    for d, k, sides in [(0.3, 1, 2), (0.5, 2, 2), (0.4, 1.5, 1)]:
+        ref = TTestIndPower().solve_power(
+            effect_size=d, alpha=0.05, power=0.9, ratio=k,
+            alternative="two-sided" if sides == 2 else "larger")
+        got = calc.two_means(d=d, power=0.9, ratio=k, sides=sides)["n1_raw"]
+        assert abs(got - ref) < 1e-3
+
+
 # Buderer: Se 0.90, precision 0.05, prevalence 0.20 -> 139 diseased, 692 total
 def test_buderer():
     r = calc.diagnostic_accuracy(0.90, 0.85, 0.20, 0.05)

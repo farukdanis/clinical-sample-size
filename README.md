@@ -3,9 +3,8 @@ title: Clinical Sample Size Calculator
 emoji: 🧮
 colorFrom: blue
 colorTo: indigo
-sdk: gradio
-sdk_version: 6.31.0
-app_file: app.py
+sdk: static
+app_file: index.html
 pinned: true
 license: mit
 short_description: A priori sample size for clinical studies (TR/EN)
@@ -29,7 +28,7 @@ Etik kurul başvuruları ve makale yöntem bölümleri için iki dilli a priori 
 | Module | Method | Reference |
 |---|---|---|
 | Two proportions | Normal approximation, pooled variance under H0, optional Fleiss continuity correction, unequal allocation | Fleiss, Levin & Paik 2003 |
-| Two means | Exact noncentral-t solution (statsmodels) | Cohen 1988 |
+| Two means | Exact noncentral-t solution (matches G\*Power and statsmodels) | Cohen 1988 |
 | Diagnostic accuracy | Precision-based sensitivity/specificity, prevalence-adjusted | Buderer 1996 |
 | ROC AUC | Test of AUC vs AUC0, Hanley–McNeil variance, numeric search | Hanley & McNeil 1982 |
 | Logistic regression | Events-per-variable rule + Riley criteria (i) shrinkage and (iii) intercept precision | Peduzzi 1996; Riley 2020 |
@@ -44,16 +43,22 @@ All modules include a dropout / exclusion adjustment: $N_{adj} = N / (1 - d)$.
 `tests/test_calc.py` checks the formulas against published or widely used reference values:
 
 - Two proportions 0.40 vs 0.60 → 97 per group (107 with continuity correction); Monte Carlo power check for unequal allocation
-- Two means, d = 0.5 → 64 per group; d = 0.8 → 26 per group (G\*Power)
+- Two means, d = 0.5 → 64 per group; d = 0.8 → 26 per group (G\*Power); identical to statsmodels to 0.001 for unequal allocation and one-sided tests
 - Buderer: Se 0.90, precision 0.05, prevalence 0.20 → 139 diseased, 692 total
 - Correlation r = 0.30 → 85 (Hulley et al.)
 - Schoenfeld HR 0.70 → 247 events; Freedman → 253 events
 - ROC: minimal-n property and monotonicity; NI/TOST and Riley formulas; dropout and input validation
 
+## Two ways to run / İki çalışma biçimi
+
+- **In the browser (Hugging Face Space):** `index.html` loads [Pyodide](https://pyodide.org) and runs the same `calc.py` + `reports.py` locally in the browser. No server, no data leaves the device.
+- **Locally with Gradio:** `app.py` wraps the same functions in a Gradio interface.
+
 ```bash
-pip install -r requirements.txt pytest
-pytest -q
-python app.py
+pip install -r requirements.txt -r requirements-dev.txt
+pytest -q          # validation tests (statsmodels used only as a cross-check)
+python app.py      # Gradio UI
+python -m http.server  # then open http://localhost:8000 for the static UI
 ```
 
 ## References / Kaynaklar
